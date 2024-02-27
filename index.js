@@ -103,6 +103,36 @@ app.get("/list_all_users", (req, res) => {
     })
 })
 
+app.post("/send_message", (req, res) => {
+    const { sender, recipient, message } = req.body;
+
+    if (!sender || !recipient || !message) {
+        res.status(400).json({ error: "Messages require a sender, recipient, and body to be delivered. Please try again." });
+        return;
+    }
+
+    const newMessage = { 
+        sender_user_id: sender, 
+        receiver_user_id: recipient,
+        message,
+        epoch: Math.floor(new Date().getTime() / 1000) 
+    };
+
+    db.query("INSERT INTO messages SET ?", newMessage, (err, results) => {
+        if (err) {
+            res.status(500).json({ error: `Error serving request: ${err.message}` });
+        } else {
+            /* rather than hardcoding the 200 success response, it seems more sensible to first check whether a row has been added to the table. If added return 200 for full success, if not return 204 to indicate that the request was technically successful but the database hasn't been updated */
+            const successResponse = {
+                success_code: results.affectedRows > 0 ? '200' : '204',
+                success_title: "Message Sent",
+                success_message: "Message was sent successfully!"
+            };
+            res.json(successResponse);
+        }
+    });
+});
+
 app.listen(3000, () => {
     console.log(`Server running on port 3000.`);
 });
