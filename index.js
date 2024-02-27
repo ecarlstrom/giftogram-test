@@ -47,6 +47,42 @@ app.post("/register", (req, res) => {
     });
 });
 
+app.post("/login", (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        res.status(400).json({ error: 'Please provide both a login and password.' });
+        return;
+    }
+
+    db.query("SELECT * FROM users WHERE email = ? AND password = ?", 
+    [email, password],
+    (err, results) => {
+        if (err) {
+            res.status(500).json({ error: `Error serving request: ${err.message}` });
+        } else {
+            if(!results[0] || results[0] == []) {
+                const loginFailure = {
+                    error_code: "401",
+                    error_title: "Login Unsuccessful",
+                    error_message: "Sorry, this email & password combination is not registered. Please check the information you provided or register for an account."
+                };
+                res.json(loginFailure);
+            } else {
+                const { id, first_name, last_name } = results[0];
+                const loginSuccess = {
+                    id,
+                    email,
+                    first_name,
+                    last_name,
+                    success_message: "Logged in!"
+                };
+                res.json(loginSuccess);
+            }
+        }
+    });
+});
+
 app.listen(3000, () => {
     console.log(`Server running on port 3000.`);
 });
