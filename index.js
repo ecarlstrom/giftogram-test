@@ -83,6 +83,26 @@ app.post("/login", (req, res) => {
     });
 });
 
+app.get("/list_all_users", (req, res) => {
+    // could make this so if the requester is not a user it doesn't return anything as well depending on security concerns
+    const id = req.body.requester_user_id;
+
+    if (!id) {
+        res.status(400).json({ error: 'Please provide your user ID to perform a lookup.' });
+        return;
+    }
+
+    db.query("SELECT * FROM users WHERE id <> ?", 
+    [id],
+    (err, results) => {
+        if(err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.send(results);
+        }
+    })
+})
+
 app.listen(3000, () => {
     console.log(`Server running on port 3000.`);
 });
