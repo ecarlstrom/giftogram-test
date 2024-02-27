@@ -133,6 +133,45 @@ app.post("/send_message", (req, res) => {
     });
 });
 
+app.get('/view_messages', (req, res) => {
+    const { user_id_a, user_id_b } = req.body;
+
+    if (!user_id_a || !user_id_b) {
+        res.status(400).json({ error: 'Both user IDs are required to view messages.' });
+        return;
+    }
+
+    // this could also be ordered by message id depending on preference
+    db.query(
+        `
+        SELECT message_id, sender_user_id, message, epoch
+        FROM messages 
+        WHERE (sender_user_id in(?, ?) AND receiver_user_id in(?, ?))
+        ORDER BY epoch
+        `,
+        [user_id_a, user_id_b, user_id_b, user_id_a],
+        (err, results) => {
+            if (err) {
+                res.status(500).json({ error: `Error serving request: ${err.message}` });
+            } else {
+                const formattedResponse = {
+                    messages: results.map((message) => ({
+                        message_id: message.message_id,
+                        sender_user_id: message.sender_user_id,
+                        message: message.message,
+                        epoch: message.epoch
+                    }))
+                };
+                if(!formattedResponse.messages || formattedResponse.messages.length == 0) {
+                    res.send("No messages found.");
+                } else {
+                    res.json(formattedResponse);
+                }
+            }
+        }
+    );
+});
+
 app.listen(3000, () => {
     console.log(`Server running on port 3000.`);
 });
